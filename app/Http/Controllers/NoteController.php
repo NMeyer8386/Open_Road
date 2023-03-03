@@ -17,7 +17,9 @@ class NoteController extends Controller
      */
     public function index()
     {
-        $notes  = Note::where('user_id', Auth::id())->latest('updated_at')->paginate(5);
+        //$notes  = Note::where('user_id', Auth::id())->latest('updated_at')->paginate(5);
+        //$notes = Auth::user()->notes()->latest('updated_at')->paginate(5);
+        $notes = Note::whereBelongsTo(Auth::user())->latest('updated_at')->paginate(5);
         return view('notes.index')->with('notes', $notes);
     }
 
@@ -39,9 +41,8 @@ class NoteController extends Controller
             'text' => 'required'
         ]);
 
-        Note::create([
+        Auth::user()->notes()->create([ //works despite the error, this is because of php intelephense
             'uuid' => Str::uuid(),
-            'user_id' => Auth::id(),
             'title' => $request->title,
             'text' => $request->text
         ]);
@@ -56,7 +57,7 @@ class NoteController extends Controller
         //$note = Note::where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
 
         //read up on gates and policies so you don't have to use if statements for every function
-        if($note->user_id != Auth::id()){
+        if(!$note->user->is(Auth::user())){
             return abort(403);
         }
 
@@ -68,7 +69,7 @@ class NoteController extends Controller
      */
     public function edit(Note $note)
     {
-        if($note->user_id != Auth::id()){
+        if(!$note->user->is(Auth::user())){
             return abort(403);
         }
 
@@ -80,7 +81,7 @@ class NoteController extends Controller
      */
     public function update(Request $request, Note $note)
     {
-        if($note->user_id != Auth::id()){
+        if(!$note->user->is(Auth::user())){
             return abort(403);
         }
 
@@ -101,12 +102,12 @@ class NoteController extends Controller
      */
     public function destroy(Note $note)
     {
-        if($note->user_id != Auth::id()){
+        if(!$note->user->is(Auth::user())){
             return abort(403);
         }
 
         $note->delete();
 
-        return to_route('notes.index')->with('success', 'Note Deleted Successfully!');
+        return to_route('notes.index')->with('success', 'Note Moved to Trash!');
     }
 }
